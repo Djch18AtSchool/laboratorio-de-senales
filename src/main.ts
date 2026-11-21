@@ -9,6 +9,7 @@ import { createSamplePanel } from './ui/samplePanel';
 import { createDependencePanel } from './ui/dependencePanel';
 import { createExamples } from './ui/examples';
 import { createTransport } from './ui/transport';
+import { createApproxPanel } from './ui/approxPanel';
 
 let state: AppState = initialState();
 let model: Model = computeModel(state);
@@ -76,6 +77,19 @@ const renderTransport = createTransport(
   () => model,
 );
 
+const renderApprox = createApproxPanel(
+  {
+    targets: byId('approx-targets'),
+    k: byId<HTMLInputElement>('approx-k'),
+    kNumber: byId<HTMLInputElement>('approx-k-number'),
+    dim: byId('approx-dim'),
+    canvas: byId<HTMLCanvasElement>('approx-canvas'),
+    spectrum: byId<HTMLCanvasElement>('approx-spectrum'),
+    stats: byId('approx-stats'),
+  },
+  scheduleRender,
+);
+
 function render(): void {
   const theme = readTheme();
   renderExamples(state);
@@ -84,6 +98,7 @@ function render(): void {
   renderSample(state, model);
   renderDependence(state, model);
   renderTransport(state, model);
+  renderApprox(theme);
 }
 
 new ResizeObserver(scheduleRender).observe(document.body);

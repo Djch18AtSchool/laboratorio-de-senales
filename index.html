@@ -132,6 +132,40 @@
           </details>
         </section>
         </div>
+
+        <section class="panel approx-panel" aria-labelledby="h-approx">
+          <header class="panel-head">
+            <h2 id="h-approx">Ampliación: aproximar una onda con armónicos</h2>
+            <span id="approx-dim" class="panel-meta"></span>
+          </header>
+          <p class="concept">
+            Se elige una onda objetivo <span class="math">y</span> ∈ <span class="math">V</span> (con media cero) y el subespacio
+            <span class="math">W</span> = span{sen₁, cos₁, …, sen<sub>K</sub>, cos<sub>K</sub>}. La mejor aproximación de
+            <span class="math">y</span> dentro de <span class="math">W</span> es su <b>proyección ortogonal</b>
+            <span class="math">p</span>. Como esa base es ortogonal, cada coeficiente es ⟨<span class="math">y</span>, b⟩ / ⟨b, b⟩.
+            El error ‖<span class="math">y</span> − <span class="math">p</span>‖ nunca crece al aumentar K, porque W solo se agranda.
+            Usa el producto interno ⟨u, v⟩ = Σ u[n]·v[n], un paso más allá de los espacios vectoriales del curso.
+          </p>
+          <div class="approx-controls">
+            <div id="approx-targets" class="chips"></div>
+            <div class="sample-control approx-k">
+              <label class="field-label k-label" for="approx-k">K</label>
+              <input id="approx-k" type="range" step="1" />
+              <input id="approx-k-number" type="number" class="num" step="1" inputmode="numeric" aria-label="Número de armónicos K" />
+            </div>
+          </div>
+          <div class="approx-grid">
+            <div>
+              <p class="legend"><span class="swatch swatch-muted"></span><span class="math">y</span> objetivo <span class="swatch swatch-accent"></span><span class="math">p</span> aproximación</p>
+              <canvas id="approx-canvas" class="wave wave-lg" aria-label="Onda objetivo y su aproximación"></canvas>
+            </div>
+            <div>
+              <p class="legend">Amplitud de cada armónico k en <span class="math">p</span></p>
+              <canvas id="approx-spectrum" class="bars" aria-label="Amplitud por armónico"></canvas>
+              <dl id="approx-stats" class="stats"></dl>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer class="foot">
