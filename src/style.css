@@ -254,6 +254,18 @@ h1 {
   gap: 10px;
   margin-left: auto;
   min-width: 0;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.presets::-webkit-scrollbar {
+  display: none;
+}
+
+.brand,
+.topbar-actions {
+  flex: none;
 }
 
 .bar-label {
@@ -1921,7 +1933,7 @@ td.strong {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1199px) {
   .topbar {
     flex-wrap: wrap;
     row-gap: 10px;
