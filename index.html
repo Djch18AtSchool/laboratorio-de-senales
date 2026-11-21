@@ -36,10 +36,6 @@
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.6v.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
             <span>Fundamento</span>
           </button>
-          <div class="play-wrap">
-            <button id="play" type="button" class="play" aria-pressed="false" title="Barra espaciadora">Escuchar</button>
-            <p class="play-hint">Sube el volumen y quita el modo silencio</p>
-          </div>
         </div>
         <p id="audio-warning" class="toast" role="status" hidden></p>
       </header>
@@ -80,6 +76,10 @@
                 <span>canal</span>
               </button>
             </div>
+            <div class="console-play">
+              <button id="play" type="button" class="play" aria-pressed="false" title="Barra espaciadora">Escuchar</button>
+              <p class="play-hint">Sube el volumen y quita el modo silencio</p>
+            </div>
             <aside class="master" aria-labelledby="h-master">
               <header class="strip-head"><h3 id="h-master" class="master-name">Salida</h3></header>
               <div class="master-g">
@@ -102,7 +102,7 @@
                   <b id="meter-value" class="master-read"></b>
                 </div>
               </div>
-              <p class="param-hint">g = 0.9/p · vol es fijo: la salida es lineal y nunca se recorta</p>
+              <p class="param-hint master-note">g = 0.9/p · vol es fijo: la salida es lineal y nunca se recorta</p>
             </aside>
           </div>
         </section>
