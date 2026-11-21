@@ -13,6 +13,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const PHASE_RANGE: ValueRange = { min: 0, max: 359, step: 1 };
 const BIG_STEP_DEG = 15;
 const FULL_TURN = 360;
+const DOUBLE_TAP_MS = 300;
+/** Junto al centro el ángulo no está definido: se ignora. */
+const CENTER_DEAD_ZONE_PX = 5;
 
 const svgEl = (tag: string, attrs: Record<string, string | number>): SVGElement => {
   const el = document.createElementNS(SVG_NS, tag);
@@ -60,26 +63,42 @@ export const createPhaseKnob = (onInput: (deg: number) => void): Knob => {
     value = v;
     onInput(v);
   };
-  const fromPointer = (e: PointerEvent): number => {
+  const fromPointer = (e: PointerEvent): number | null => {
     const rect = el.getBoundingClientRect();
-    return snapAngle(angleFromPoint(e.clientX - (rect.left + rect.width / 2), e.clientY - (rect.top + rect.height / 2)));
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    return Math.hypot(dx, dy) < CENTER_DEAD_ZONE_PX ? null : snapAngle(angleFromPoint(dx, dy));
+  };
+  const emitFromPointer = (e: PointerEvent): void => {
+    const v = fromPointer(e);
+    if (v !== null) emit(v);
   };
 
+  let lastTap = 0;
   el.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     el.focus();
+    if (e.pointerType === 'touch') {
+      const isDoubleTap = e.timeStamp - lastTap < DOUBLE_TAP_MS;
+      lastTap = e.timeStamp;
+      if (isDoubleTap) {
+        emit(0);
+        return;
+      }
+    }
     el.setPointerCapture(e.pointerId);
     el.classList.add('is-dragging');
-    emit(fromPointer(e));
+    emitFromPointer(e);
   });
   el.addEventListener('pointermove', (e) => {
-    if (el.hasPointerCapture(e.pointerId)) emit(fromPointer(e));
+    if (el.hasPointerCapture(e.pointerId)) emitFromPointer(e);
   });
   const release = (): void => el.classList.remove('is-dragging');
   el.addEventListener('pointerup', release);
   el.addEventListener('pointercancel', release);
   el.addEventListener('dblclick', () => emit(0));
   el.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
     // La fase da la vuelta: 359° + 1° = 0°.
     const wrapped = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? (value + 1) % FULL_TURN
       : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? (value + FULL_TURN - 1) % FULL_TURN

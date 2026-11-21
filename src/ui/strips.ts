@@ -176,7 +176,10 @@ export const createStrips = (container: HTMLElement, addButton: HTMLButtonElemen
     if (key !== structureKey) {
       const previous = new Map(strips.map((s) => [s.id, s]));
       strips = state.channels.map((c) => previous.get(c.id) ?? createStrip(c, dispatch));
+      // replaceChildren saca y vuelve a poner los nodos: se conserva el foco del teclado.
+      const focused = document.activeElement;
       container.replaceChildren(...strips.map((s) => s.root), addButton);
+      if (focused instanceof HTMLElement && focused !== document.activeElement && container.contains(focused)) focused.focus();
       structureKey = key;
     }
     const activeIds = model.active.map((c) => c.id);

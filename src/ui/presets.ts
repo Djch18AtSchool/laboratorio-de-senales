@@ -14,6 +14,7 @@ export const createPresets = (container: HTMLElement, concept: HTMLElement, disp
     buttons.forEach(({ ex, b }) => b.setAttribute('aria-pressed', String(state.example === ex.id)));
     const current = EXAMPLES.find((e) => e.id === state.example);
     concept.hidden = !current;
+    concept.closest('.scope-panel')?.classList.toggle('has-concept', Boolean(current));
     if (current) concept.replaceChildren(h('b', {}, current.label), h('span', {}, current.concept));
   };
 };

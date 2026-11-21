@@ -515,13 +515,28 @@ h1 {
   gap: 4px;
 }
 
+.scope-title {
+  min-width: 0;
+}
+
 .scope-formula {
   font-size: 19px;
   color: var(--ink);
   text-shadow: 0 1px 8px var(--screen);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scope-vector {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .readouts {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -991,6 +1006,7 @@ h1 {
 .lcd:focus {
   outline: none;
   border-color: var(--c, var(--ink));
+  box-shadow: 0 0 0 3px rgb(242 244 248 / 15%);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--ink)) 22%, transparent);
 }
 
@@ -1600,6 +1616,7 @@ td.strong {
   height: 22px;
   padding: 0 5px;
   border-radius: 6px;
+  background: var(--panel-3);
   background: color-mix(in srgb, var(--c) 18%, transparent);
   color: var(--c);
   font-family: var(--serif);
@@ -2035,7 +2052,7 @@ td.strong {
     bottom: 12px;
   }
 
-  .scope-panel:has(.scope-concept:not([hidden])) .scope-bottom {
+  .scope-panel.has-concept .scope-bottom {
     visibility: hidden;
   }
 

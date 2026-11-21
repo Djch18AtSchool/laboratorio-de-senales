@@ -64,11 +64,11 @@ export const createScope = (el: ScopeElements, onSample: (n: number) => void) =>
     );
 
     const n = state.sample;
+    setText(el.cursor, `n ${n} · ${((n / SAMPLE_RATE) * MS_PER_S).toFixed(2)} ms · m[n] ${fmtNearZero(model.mix[n]).text}`);
     const x = (n / (N - 1)) * el.canvas.clientWidth;
     const half = el.cursor.offsetWidth / 2;
     const left = Math.min(Math.max(x, half + CURSOR_EDGE_PX), el.canvas.clientWidth - half - CURSOR_EDGE_PX);
     el.cursor.style.left = `${left}px`;
-    setText(el.cursor, `n ${n} · ${((n / SAMPLE_RATE) * MS_PER_S).toFixed(2)} ms · m[n] ${fmtNearZero(model.mix[n]).text}`);
 
     const contributions: WaveLayer[] = labels.map((l, i) => ({
       values: scale(model.coefficients[i], model.vectors.get(l.id) as Float64Array),

@@ -10,7 +10,7 @@ interface TransportElements {
 
 /** Elementos en los que la barra espaciadora ya tiene un uso propio. */
 const isTypingTarget = (t: EventTarget | null): boolean =>
-  t instanceof HTMLElement && (t.matches('input, textarea, select, button, [role="slider"], [role="tab"]') || t.isContentEditable);
+  t instanceof HTMLElement && (t.matches('input, textarea, select, button, [role="tab"], summary') || t.isContentEditable);
 
 const EQ_BARS = 4;
 
@@ -90,7 +90,7 @@ export const createTransport = (el: TransportElements, getModel: () => Model) =>
   });
   player.onInterrupted(paintButton);
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return;
+    if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target) || document.querySelector('dialog[open]')) return;
     e.preventDefault();
     el.play.click();
   });

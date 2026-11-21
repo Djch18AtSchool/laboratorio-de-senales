@@ -24,6 +24,8 @@ export interface Fader {
 const DETENT_FRACTION = 0.015;
 /** Alto de la tapa del fader en px (igual que --cap en CSS): su centro recorre la pista menos la tapa. */
 const CAP_PX = 14;
+/** Dos toques dentro de este intervalo cuentan como doble toque (iOS no siempre emite dblclick). */
+const DOUBLE_TAP_MS = 300;
 
 /** Fader vertical tipo consola: arrastrar, clic en la pista, teclado y doble clic para reiniciar. */
 export const createFader = (opts: FaderOptions): Fader => {
@@ -64,9 +66,18 @@ export const createFader = (opts: FaderOptions): Fader => {
     opts.onInput(v);
   };
 
+  let lastTap = 0;
   el.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     el.focus();
+    if (e.pointerType === 'touch') {
+      const isDoubleTap = e.timeStamp - lastTap < DOUBLE_TAP_MS;
+      lastTap = e.timeStamp;
+      if (isDoubleTap) {
+        emit(opts.resetValue);
+        return;
+      }
+    }
     el.setPointerCapture(e.pointerId);
     el.classList.add('is-dragging');
     emit(fromPointer(e.clientY));
@@ -79,6 +90,7 @@ export const createFader = (opts: FaderOptions): Fader => {
   el.addEventListener('pointercancel', release);
   el.addEventListener('dblclick', () => emit(opts.resetValue));
   el.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
     const next = keyboardValue(e.key, value, range, opts.bigStep);
     if (next === null) return;
     e.preventDefault();
