@@ -54,8 +54,11 @@ export const createPhaseKnob = (onInput: (deg: number) => void): Knob => {
   el.append(svg);
 
   let value = Number.NaN;
+  let shown = Number.NaN;
   const emit = (v: number): void => {
-    if (v !== value) onInput(v);
+    if (v === value) return;
+    value = v;
+    onInput(v);
   };
   const fromPointer = (e: PointerEvent): number => {
     const rect = el.getBoundingClientRect();
@@ -89,8 +92,9 @@ export const createPhaseKnob = (onInput: (deg: number) => void): Knob => {
   return {
     el,
     setValue(deg: number): void {
-      if (deg === value) return;
       value = deg;
+      if (deg === shown) return;
+      shown = deg;
       arc.setAttribute('stroke-dasharray', `${(deg / FULL_TURN) * CIRCUMFERENCE} ${CIRCUMFERENCE}`);
       pointer.setAttribute('transform', `rotate(${deg} ${c} ${c})`);
       el.setAttribute('aria-valuenow', String(deg));

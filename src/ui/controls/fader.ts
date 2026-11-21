@@ -22,6 +22,8 @@ export interface Fader {
 
 /** Ancho de la zona de retén alrededor del centro, como fracción del rango. */
 const DETENT_FRACTION = 0.015;
+/** Alto de la tapa del fader en px (igual que --cap en CSS): su centro recorre la pista menos la tapa. */
+const CAP_PX = 14;
 
 /** Fader vertical tipo consola: arrastrar, clic en la pista, teclado y doble clic para reiniciar. */
 export const createFader = (opts: FaderOptions): Fader => {
@@ -43,17 +45,23 @@ export const createFader = (opts: FaderOptions): Fader => {
     scale,
     track,
   );
+  // `value` es el valor lógico (se adelanta al emitir, para teclas repetidas antes de redibujar);
+  // `shown` es lo que está pintado.
   let value = Number.NaN;
+  let shown = Number.NaN;
   const center = (range.min + range.max) / 2;
   const detent = DETENT_FRACTION * (range.max - range.min);
 
   const fromPointer = (clientY: number): number => {
     const rect = track.getBoundingClientRect();
-    const raw = valueFromFraction(1 - (clientY - rect.top) / rect.height, range);
+    const travel = Math.max(1, rect.height - CAP_PX);
+    const raw = valueFromFraction(1 - (clientY - rect.top - CAP_PX / 2) / travel, range);
     return opts.bipolar ? applyDetent(raw, center, detent) : raw;
   };
   const emit = (v: number): void => {
-    if (v !== value) opts.onInput(v);
+    if (v === value) return;
+    value = v;
+    opts.onInput(v);
   };
 
   el.addEventListener('pointerdown', (e) => {
@@ -80,8 +88,9 @@ export const createFader = (opts: FaderOptions): Fader => {
   return {
     el,
     setValue(v: number): void {
-      if (v === value) return;
       value = v;
+      if (v === shown) return;
+      shown = v;
       const f = fractionFromValue(v, range);
       const from = opts.bipolar ? Math.min(0.5, f) : 0;
       const to = opts.bipolar ? Math.max(0.5, f) : f;
