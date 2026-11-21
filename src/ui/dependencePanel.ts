@@ -13,13 +13,17 @@ interface DependenceElements {
   readonly gram: HTMLElement;
 }
 
+/** Cifras de los coeficientes mostrados; la comprobación usa todos los dígitos. */
+const COEF_DIGITS = 4;
+
 const named = (l: ActiveLabel): HTMLElement => h('span', { class: 'math named', style: `--c:${channelColorVar(l.slot)}` }, l.name);
 
 const combination = (rel: DependenceRelation, labels: ActiveLabel[]): (Node | string)[] =>
   rel.basis.flatMap((b, i) => {
-    const c = rel.coefficients[i];
-    const sign = i === 0 ? (c < 0 ? '−' : '') : c < 0 ? ' − ' : ' + ';
-    return [sign, fmt(Math.abs(c)), '·', named(labels[b])];
+    const text = fmt(rel.coefficients[i], COEF_DIGITS);
+    const isNegative = text.startsWith('−');
+    const sign = i === 0 ? (isNegative ? '−' : '') : isNegative ? ' − ' : ' + ';
+    return [sign, isNegative ? text.slice(1) : text, '·', named(labels[b])];
   });
 
 /** c₁s₁ + … + cₚsₚ = 0 con el canal redundante con coeficiente −1. */
@@ -37,6 +41,7 @@ const relationItem = (rel: DependenceRelation, labels: ActiveLabel[]): HTMLEleme
     h('p', { class: 'check' },
       'Comprobación: ‖', target.name, ' − (', ...combination(rel, labels), ')‖ = ',
       h('b', {}, residual)),
+    h('p', { class: 'check' }, `Coeficientes con ${COEF_DIGITS} decimales; la comprobación usa todos sus dígitos.`),
     h('p', { class: 'note' }, `${target.name} pertenece al subespacio generado por ${others}: es redundante.`),
   );
 };

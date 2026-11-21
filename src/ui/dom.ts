@@ -64,3 +64,25 @@ export const icon = (name: keyof typeof ICONS & string, filled = false): SVGSVGE
   svg.append(path);
   return svg;
 };
+
+/**
+ * Escribe un valor en un control salvo que la persona esté escribiendo en él.
+ * Tras confirmar (Enter o salir del campo) se muestra el valor ya normalizado.
+ */
+export const syncInput = (el: HTMLInputElement, value: string): void => {
+  if (el.dataset.dirty === '1' && document.activeElement === el) return;
+  if (el.value !== value) el.value = value;
+};
+
+/** Marca una caja de número como “en edición” hasta que se confirma. */
+export const trackEditing = (el: HTMLInputElement): void => {
+  el.addEventListener('input', () => {
+    el.dataset.dirty = '1';
+  });
+  el.addEventListener('change', () => {
+    delete el.dataset.dirty;
+  });
+  el.addEventListener('blur', () => {
+    delete el.dataset.dirty;
+  });
+};

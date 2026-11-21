@@ -1,7 +1,7 @@
 import type { AppState } from '../state/state';
 import type { Model } from '../state/model';
 import { N, SAMPLE_RATE } from '../math/signal';
-import { h, paintRange, setText } from './dom';
+import { h, paintRange, setText, syncInput, trackEditing } from './dom';
 import { fmt, fmtNearZero } from './format';
 import { activeLabels } from './labels';
 import { channelColorVar } from './theme';
@@ -25,6 +25,7 @@ const cell = (text: string, cls = 'n'): HTMLTableCellElement => h('td', { class:
 export const createSamplePanel = (el: SampleElements, onSample: (n: number) => void) => {
   el.range.max = String(N - 1);
   el.number.max = String(N - 1);
+  trackEditing(el.number);
   el.range.addEventListener('input', () => onSample(Number(el.range.value)));
   el.number.addEventListener('change', () => {
     const v = Math.round(Number(el.number.value));
@@ -33,7 +34,7 @@ export const createSamplePanel = (el: SampleElements, onSample: (n: number) => v
 
   return (state: AppState, model: Model): void => {
     const n = state.sample;
-    if (document.activeElement !== el.number) el.number.value = String(n);
+    syncInput(el.number, String(n));
     el.range.value = String(n);
     paintRange(el.range);
     setText(el.time, `t = n / 48 000 = ${((n / SAMPLE_RATE) * MS_PER_S).toFixed(3)} ms`);

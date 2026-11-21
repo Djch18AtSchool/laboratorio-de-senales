@@ -24,7 +24,8 @@ const scheduleRender = (): void => {
 
 const dispatch = (action: Action): void => {
   const next = reduce(state, action);
-  if (next === state) return;
+  // Aunque el estado no cambie (p. ej. un valor no válido), se vuelve a pintar
+  // para que las cajas de número muestren el valor vigente.
   const needsModel = next.channels !== state.channels || next.volume !== state.volume;
   state = next;
   if (needsModel) model = computeModel(state);

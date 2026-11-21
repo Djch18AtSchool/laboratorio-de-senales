@@ -3,7 +3,7 @@ import type { Model } from '../state/model';
 import { harmonicFrequency, N, type Vector } from '../math/signal';
 import { scale } from '../math/linalg';
 import { drawWave, sampleFromPointer } from '../draw/wave';
-import { h, icon, paintRange, setText } from './dom';
+import { h, icon, paintRange, setText, syncInput, trackEditing } from './dom';
 import { channelName, fmtHz } from './format';
 import { channelColorVar, type Theme } from './theme';
 
@@ -31,8 +31,11 @@ interface Card {
 const field = (label: string, ...controls: HTMLElement[]): HTMLElement =>
   h('div', { class: 'field' }, h('span', { class: 'field-label' }, label), h('div', { class: 'field-controls' }, ...controls));
 
-const numberInput = (attrs: Record<string, string | number>): HTMLInputElement =>
-  h('input', { type: 'number', inputmode: 'decimal', class: 'num', ...attrs });
+const numberInput = (attrs: Record<string, string | number>): HTMLInputElement => {
+  const el = h('input', { type: 'number', class: 'num', ...attrs });
+  trackEditing(el);
+  return el;
+};
 
 /** Conecta un control: `input` para deslizadores, `change` para cajas de número. */
 const bind = (el: HTMLInputElement, event: 'input' | 'change', fn: (value: number) => void): void =>
@@ -62,9 +65,9 @@ const createCard = (channel: Channel, dispatch: Dispatch): Card => {
 
   const dec = h('button', { type: 'button', class: 'step', 'aria-label': 'Bajar armónico' }, icon('minus'));
   const inc = h('button', { type: 'button', class: 'step', 'aria-label': 'Subir armónico' }, icon('plus'));
-  const harmonic = numberInput({ min: HARMONIC_MIN, max: HARMONIC_MAX, step: 1, 'aria-label': 'Armónico k' });
+  const harmonic = numberInput({ min: HARMONIC_MIN, max: HARMONIC_MAX, step: 1, inputmode: 'numeric', 'aria-label': 'Armónico k' });
   const phase = h('input', { type: 'range', min: 0, max: PHASE_MAX, step: 1, 'aria-label': 'Fase en grados' });
-  const phaseNum = numberInput({ min: 0, max: PHASE_MAX, step: 1, 'aria-label': 'Fase en grados' });
+  const phaseNum = numberInput({ min: 0, max: PHASE_MAX, step: 1, inputmode: 'numeric', 'aria-label': 'Fase en grados' });
   const amp = h('input', { type: 'range', min: -1, max: 1, step: 0.01, class: 'bipolar', 'aria-label': 'Amplitud' });
   const ampNum = numberInput({ min: -1, max: 1, step: 0.01, 'aria-label': 'Amplitud' });
   const canvas = h('canvas', { class: 'wave wave-sm', 'aria-hidden': 'true' });
@@ -95,11 +98,6 @@ const createCard = (channel: Channel, dispatch: Dispatch): Card => {
     canvas,
   );
   return { id, root, name, freq, tag, formula, active, remove, harmonic, dec, inc, phase, phaseNum, amp, ampNum, canvas };
-};
-
-/** Escribe un valor en un control salvo que la persona lo esté editando. */
-const syncInput = (el: HTMLInputElement, value: string): void => {
-  if (document.activeElement !== el && el.value !== value) el.value = value;
 };
 
 const updateCard = (card: Card, c: Channel, index: number, ctx: RenderContext): void => {

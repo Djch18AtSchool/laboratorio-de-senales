@@ -4,6 +4,7 @@ export const HARMONIC_MIN = 1;
 export const HARMONIC_MAX = 20;
 export const PHASE_MAX = 359;
 export const DEFAULT_SAMPLE = 137;
+export const SAMPLE_MAX = 479;
 export const DEFAULT_VOLUME = 0.8;
 
 export interface Channel {
@@ -96,11 +97,18 @@ export const initialState = (): AppState => ({
 
 const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
 
+/** Las amplitudes se guardan con los mismos 2 decimales con que se muestran. */
+export const AMPLITUDE_DECIMALS = 2;
+const roundTo = (x: number, decimals: number): number => {
+  const f = 10 ** decimals;
+  return Math.round(x * f) / f + 0;
+};
+
 const sanitize = (patch: Partial<ChannelSpec & { active: boolean }>): Partial<Channel> => ({
   ...patch,
   ...(patch.harmonic !== undefined && { harmonic: clamp(Math.round(patch.harmonic), HARMONIC_MIN, HARMONIC_MAX) }),
   ...(patch.phase !== undefined && { phase: ((Math.round(patch.phase) % 360) + 360) % 360 }),
-  ...(patch.amplitude !== undefined && { amplitude: clamp(patch.amplitude, -1, 1) }),
+  ...(patch.amplitude !== undefined && { amplitude: roundTo(clamp(patch.amplitude, -1, 1), AMPLITUDE_DECIMALS) }),
 });
 
 export type Action =
@@ -137,7 +145,7 @@ export const reduce = (state: AppState, action: Action): AppState => {
       if (state.channels.length <= MIN_CHANNELS) return state;
       return { ...state, example: null, channels: state.channels.filter((c) => c.id !== action.id) };
     case 'setSample':
-      return Number.isFinite(action.sample) ? { ...state, sample: action.sample } : state;
+      return Number.isFinite(action.sample) ? { ...state, sample: clamp(Math.round(action.sample), 0, SAMPLE_MAX) } : state;
     case 'setVolume':
       return Number.isFinite(action.volume) ? { ...state, volume: clamp(action.volume, 0, 1) } : state;
     case 'loadExample': {

@@ -13,7 +13,14 @@ const MIN_UPDATE_INTERVAL_MS = 30;
 interface Voice {
   readonly source: AudioBufferSourceNode;
   readonly fade: GainNode;
+  /** Momento en que empieza su fundido de entrada. */
+  readonly fadeInStart: number;
 }
+
+const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
+
+/** Valor del fundido de entrada de una voz en el instante t (rampa lineal de 0 a 1). */
+const fadeInValueAt = (voice: Voice, t: number): number => clamp01((t - voice.fadeInStart) / CROSSFADE_S);
 
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
@@ -39,6 +46,12 @@ export class LoopPlayer {
   private pending: Float64Array | null = null;
   private timer: number | null = null;
   private lastUpdate = 0;
+  private interruptedHandler: (() => void) | null = null;
+
+  /** Se llama si el sistema suspende el audio (una llamada, la app en segundo plano). */
+  onInterrupted(handler: () => void): void {
+    this.interruptedHandler = handler;
+  }
 
   get isPlaying(): boolean {
     return this.voice !== null;
@@ -56,9 +69,11 @@ export class LoopPlayer {
       this.ctx = createContext();
       this.master = this.ctx.createGain();
       this.master.connect(this.ctx.destination);
+      this.ctx.addEventListener('statechange', () => this.handleStateChange());
     }
     await this.ctx.resume();
     if (!this.master) throw new Error('LoopPlayer: falta el nodo de ganancia');
+    if (this.voice) return;
     this.master.gain.setValueAtTime(gain, this.ctx.currentTime);
     this.epoch = this.ctx.currentTime;
     this.voice = this.spawn(samples, this.epoch, 0);
@@ -84,6 +99,12 @@ export class LoopPlayer {
     const previous = this.voice;
     this.voice = this.spawn(samples, t0, offset);
     this.fadeOut(previous, t0);
+  }
+
+  private handleStateChange(): void {
+    if (!this.ctx || this.ctx.state === 'running' || !this.voice) return;
+    this.stop();
+    this.interruptedHandler?.();
   }
 
   setGain(gain: number): void {
@@ -112,7 +133,7 @@ export class LoopPlayer {
     fade.gain.linearRampToValueAtTime(1, when + CROSSFADE_S);
     source.connect(fade).connect(this.master as GainNode);
     source.start(when, offset);
-    return { source, fade };
+    return { source, fade, fadeInStart: when };
   }
 
   private fadeOut(voice: Voice, when: number): void {
@@ -120,8 +141,11 @@ export class LoopPlayer {
     if (typeof g.cancelAndHoldAtTime === 'function') {
       g.cancelAndHoldAtTime(when);
     } else {
-      g.cancelScheduledValues(when);
-      g.setValueAtTime(g.value, when);
+      // Sin cancelAndHoldAtTime (Firefox): se recalcula la rampa de entrada a mano.
+      const now = (this.ctx as AudioContext).currentTime;
+      g.cancelScheduledValues(0);
+      g.setValueAtTime(fadeInValueAt(voice, now), now);
+      g.linearRampToValueAtTime(fadeInValueAt(voice, when), Math.max(when, now));
     }
     g.linearRampToValueAtTime(0, when + CROSSFADE_S);
     voice.source.stop(when + CROSSFADE_S + LOOKAHEAD_S);

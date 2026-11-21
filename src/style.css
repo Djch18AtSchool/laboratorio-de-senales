@@ -632,7 +632,7 @@ b {
 .wave {
   display: block;
   width: 100%;
-  touch-action: none;
+  touch-action: pan-y;
   cursor: crosshair;
 }
 
@@ -1171,6 +1171,11 @@ tfoot tr:first-child td {
   }
 
   .stat dd {
+    font-size: 16px;
+  }
+
+  /* iOS amplía la página al enfocar campos con letra menor a 16px. */
+  .num {
     font-size: 16px;
   }
 }

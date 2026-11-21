@@ -17,6 +17,15 @@ describe('estado del mezclador', () => {
     expect(s.channels[0].harmonic).toBe(20);
   });
 
+  test('la amplitud se guarda con 2 decimales, como se muestra', () => {
+    const s = reduce(initialState(), { type: 'updateChannel', id: 1, patch: { amplitude: 0.333 } });
+    expect(s.channels[0].amplitude).toBe(0.33);
+  });
+
+  test('la muestra se limita a 0…479', () => {
+    expect(reduce(initialState(), { type: 'setSample', sample: 999 }).sample).toBe(479);
+  });
+
   test('ignora valores no numéricos', () => {
     const s0 = initialState();
     expect(reduce(s0, { type: 'updateChannel', id: 1, patch: { phase: Number.NaN } })).toBe(s0);
