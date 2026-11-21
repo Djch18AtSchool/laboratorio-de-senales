@@ -1,17 +1,18 @@
-import type { Action, AppState } from '../state/state';
 import type { Model } from '../state/model';
 import { LoopPlayer } from '../audio/player';
 import { SAMPLE_RATE } from '../math/signal';
-import { icon, paintRange, setText } from './dom';
+import { h, icon, setText } from './dom';
 
 interface TransportElements {
   readonly play: HTMLButtonElement;
-  readonly volume: HTMLInputElement;
-  readonly volumeValue: HTMLElement;
   readonly warning: HTMLElement;
 }
 
-const PERCENT = 100;
+/** Elementos en los que la barra espaciadora ya tiene un uso propio. */
+const isTypingTarget = (t: EventTarget | null): boolean =>
+  t instanceof HTMLElement && (t.matches('input, textarea, select, button, [role="slider"], [role="tab"]') || t.isContentEditable);
+
+const EQ_BARS = 4;
 
 const sameSamples = (a: Float64Array | null, b: Float64Array): boolean => {
   if (!a || a.length !== b.length) return false;
@@ -20,7 +21,7 @@ const sameSamples = (a: Float64Array | null, b: Float64Array): boolean => {
 };
 
 /** Botón Escuchar/Detener, volumen y conexión con el reproductor. */
-export const createTransport = (el: TransportElements, dispatch: (a: Action) => void, getModel: () => Model) => {
+export const createTransport = (el: TransportElements, getModel: () => Model) => {
   const player = new LoopPlayer();
   let lastMix: Float64Array | null = null;
   let lastGain = -1;
@@ -34,7 +35,8 @@ export const createTransport = (el: TransportElements, dispatch: (a: Action) => 
     const playing = player.isPlaying;
     el.play.classList.toggle('is-playing', playing);
     el.play.setAttribute('aria-pressed', String(playing));
-    el.play.replaceChildren(icon(playing ? 'stop' : 'play', true), playing ? 'Detener' : 'Escuchar');
+    const eq = h('span', { class: 'eq-bars', 'aria-hidden': 'true' }, ...Array.from({ length: EQ_BARS }, () => h('i')));
+    el.play.replaceChildren(playing ? eq : icon('play', true), h('span', {}, playing ? 'Detener' : 'Escuchar'));
   };
 
   /** Lleva al reproductor la mezcla y el factor g actuales, si cambiaron. */
@@ -87,13 +89,12 @@ export const createTransport = (el: TransportElements, dispatch: (a: Action) => 
     paintButton();
   });
   player.onInterrupted(paintButton);
-  el.volume.addEventListener('input', () => dispatch({ type: 'setVolume', volume: Number(el.volume.value) / PERCENT }));
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return;
+    e.preventDefault();
+    el.play.click();
+  });
   paintButton();
 
-  return (state: AppState, model: Model): void => {
-    el.volume.value = String(Math.round(state.volume * PERCENT));
-    paintRange(el.volume);
-    setText(el.volumeValue, `${Math.round(state.volume * PERCENT)}%`);
-    sync(model);
-  };
+  return (model: Model): void => sync(model);
 };

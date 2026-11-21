@@ -2,117 +2,153 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Un mezclador de audio en el que cada canal es un vector de ℝ⁴⁸⁰ y la mezcla es una combinación lineal." />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231c1c1a'/%3E%3Cpath d='M5 16c3-9 5-9 8 0s5 9 8 0 5-9 6-3' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0f13" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23161a21'/%3E%3Cpath d='M5 16c3-9 5-9 8 0s5 9 8 0 5-9 6-3' fill='none' stroke='%23f2f4f8' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
     <title>Laboratorio de señales</title>
   </head>
   <body>
-    <div class="page">
-      <header class="top">
+    <div class="app">
+      <header class="topbar">
         <div class="brand">
-          <p class="eyebrow">Álgebra Lineal · Práctica 3</p>
-          <h1>Laboratorio de señales</h1>
-          <p class="lede">
-            El mezclador como espacio vectorial. Cada canal es un vector de
-            <span class="math">V</span> = ℝ⁴⁸⁰: un periodo de 10 ms muestreado a 48 000 muestras por segundo.
-            Lo que se ve, lo que se calcula y lo que suena es el mismo arreglo de 480 números.
-          </p>
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="9" />
+            <path d="M5 16c3-9 5-9 8 0s5 9 8 0 5-9 6-3" />
+          </svg>
+          <div class="brand-text">
+            <h1>Laboratorio de señales</h1>
+            <p class="spec">
+              <span>el mezclador como espacio vectorial</span>
+              <span class="spec-chip"><i class="math">V</i> = ℝ⁴⁸⁰ · 48 kHz · 10 ms</span>
+            </p>
+          </div>
         </div>
-        <div class="transport">
-          <button id="play" type="button" class="play" aria-pressed="false">Escuchar</button>
-          <label class="volume">
-            <span class="field-label">Volumen</span>
-            <input id="volume" type="range" min="0" max="100" step="1" aria-label="Volumen general" />
-            <span id="volume-value" class="volume-value">80%</span>
-          </label>
-          <p class="hint">Revisa el volumen y el modo silencio del teléfono.</p>
-          <p id="audio-warning" class="warning" role="status" hidden></p>
+
+        <nav class="presets" aria-label="Presets">
+          <span class="bar-label">Presets</span>
+          <div id="presets" class="preset-group"></div>
+        </nav>
+
+        <div class="topbar-actions">
+          <button id="help-open" type="button" class="ghost-btn" aria-haspopup="dialog">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.6v.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+            <span>Fundamento</span>
+          </button>
+          <div class="play-wrap">
+            <button id="play" type="button" class="play" aria-pressed="false" title="Barra espaciadora">Escuchar</button>
+            <p class="play-hint">Sube el volumen y quita el modo silencio</p>
+          </div>
         </div>
+        <p id="audio-warning" class="toast" role="status" hidden></p>
       </header>
 
-      <nav class="examples" aria-label="Ejemplos">
-        <span class="section-label">Ejemplos</span>
-        <div id="examples" class="chips"></div>
-        <p id="example-concept" class="example-concept" aria-live="polite"></p>
-      </nav>
+      <main class="workspace">
+        <section class="scope-panel" aria-labelledby="h-scope">
+          <div class="scope">
+            <canvas id="scope-canvas" class="scope-canvas" aria-label="Onda de la mezcla. Toca o arrastra para elegir la muestra n."></canvas>
+            <div class="scope-top">
+              <div class="scope-title">
+                <h2 id="h-scope" class="module-title">Mezcla <span class="module-sub">combinación lineal</span></h2>
+                <p id="scope-formula" class="scope-formula math"></p>
+              </div>
+              <div id="scope-stats" class="readouts"></div>
+            </div>
+            <div id="scope-cursor" class="scope-cursor" aria-live="off"></div>
+            <div id="scope-zero" class="scope-zero" hidden><span>vector cero</span><small>silencio · ‖m‖ = 0</small></div>
+            <div class="scope-bottom">
+              <p id="scope-vector" class="scope-vector"></p>
+              <p id="scope-span" class="scope-span"></p>
+            </div>
+            <p id="scope-concept" class="scope-concept" hidden></p>
+          </div>
+        </section>
 
-      <main class="layout">
-        <div class="workbench">
-        <section class="panel channels-panel" aria-labelledby="h-channels">
-          <header class="panel-head">
-            <h2 id="h-channels">Canales</h2>
-            <span class="panel-meta">vectores <span class="math">s</span>₁ … <span class="math">s</span><sub>p</sub></span>
+        <section class="mixer" aria-labelledby="h-mixer">
+          <header class="mixer-head">
+            <h2 id="h-mixer" class="module-title">Canales</h2>
+            <p class="module-sub">
+              cada canal es un vector <i class="math">s</i>[n] = sen(2π<i class="math">k</i>n/480 + <i class="math">φ</i>) · la amplitud
+              <i class="math">a</i>ᵢ es un producto por escalar
+            </p>
           </header>
-          <p class="concept">
-            Cada canal es <span class="math">s</span>[n] = sen(2πkn/480 + φ) y suena a k · 100 Hz. Su amplitud
-            <span class="math">a</span>ᵢ es un <b>producto por escalar</b>: un valor negativo invierte la polaridad.
-          </p>
-          <div id="channels" class="channel-list"></div>
-          <button id="add-channel" type="button" class="add">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-            <span class="label">Agregar canal</span>
+          <div class="mixer-body">
+            <div id="strips" class="strips">
+              <button id="add-channel" type="button" class="add-strip">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+                <span>canal</span>
+              </button>
+            </div>
+            <aside class="master" aria-labelledby="h-master">
+              <header class="strip-head"><h3 id="h-master" class="master-name">Salida</h3></header>
+              <div class="master-g">
+                <span class="param-label">factor <i class="math">g</i></span>
+                <span id="g-value" class="lcd-display">0.000</span>
+                <span id="g-formula" class="param-hint"></span>
+              </div>
+              <div class="master-row">
+                <div class="master-col">
+                  <div id="volume-fader" class="master-fader"></div>
+                  <span class="param-label">vol</span>
+                  <b id="volume-value" class="master-read"></b>
+                </div>
+                <div class="master-col">
+                  <div id="meter" class="meter" aria-hidden="true">
+                    <div class="meter-fill"></div>
+                    <div class="meter-ceiling"><span>0.9</span></div>
+                  </div>
+                  <span class="param-label">|<i class="math">g·m</i>|</span>
+                  <b id="meter-value" class="master-read"></b>
+                </div>
+              </div>
+              <p class="param-hint">g = 0.9/p · vol es fijo: la salida es lineal y nunca se recorta</p>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <aside class="inspector" aria-label="Análisis">
+        <div id="inspector-tabs" class="tabs" role="tablist" aria-label="Análisis">
+          <button type="button" role="tab" id="tab-muestra" data-tab="muestra" aria-controls="panel-muestra" aria-selected="false">
+            Muestra <span class="tab-badge"></span>
           </button>
-        </section>
-
-        <section class="panel mix-panel" aria-labelledby="h-mix">
-          <header class="panel-head">
-            <h2 id="h-mix">Mezcla</h2>
-            <span id="mix-zero" class="tag tag-zero" hidden>vector cero · silencio</span>
-          </header>
-          <p id="mix-formula" class="formula math"></p>
-          <p class="concept">
-            La mezcla es una <b>combinación lineal</b> de los canales activos. En trazo grueso, <span class="math">m</span>;
-            en color, cada término <span class="math">a</span>ᵢ<span class="math">s</span>ᵢ. Toca la onda para elegir una muestra.
-          </p>
-          <canvas id="mix-canvas" class="wave wave-lg" aria-label="Onda de la mezcla"></canvas>
-          <p id="coef-vector" class="coef-vector"></p>
-          <dl id="mix-stats" class="stats"></dl>
-          <p id="mix-span" class="muted small"></p>
-          <p class="muted small">
-            Lo que suena es <span class="math">g</span>·<span class="math">m</span> con un <span class="math">g</span> fijo
-            que no depende de las amplitudes: la salida sigue siendo lineal y nunca se satura.
-          </p>
-        </section>
-
+          <button type="button" role="tab" id="tab-dependencia" data-tab="dependencia" aria-controls="panel-dependencia" aria-selected="true">
+            Dependencia <span class="tab-badge"></span>
+          </button>
+          <button type="button" role="tab" id="tab-ampliacion" data-tab="ampliacion" aria-controls="panel-ampliacion" aria-selected="false">
+            Ampliación <span class="tab-badge"></span>
+          </button>
         </div>
-        <div class="analysis">
-        <section class="panel sample-panel" aria-labelledby="h-sample">
-          <header class="panel-head">
-            <h2 id="h-sample">Comprobar una muestra</h2>
-            <span id="sample-time" class="panel-meta"></span>
-          </header>
-          <p class="concept">
-            La combinación lineal se hace componente a componente: <span class="math">m</span>[n] = Σ
-            <span class="math">a</span>ᵢ · <span class="math">s</span>ᵢ[n]. La suma de la tabla es el punto marcado en la onda.
+
+        <section id="panel-muestra" class="tab-panel" role="tabpanel" aria-labelledby="tab-muestra" hidden>
+          <p class="panel-lede">
+            Comprobar una muestra. La combinación lineal se hace componente a componente:
+            <i class="math">m</i>[n] = Σ <i class="math">a</i>ᵢ·<i class="math">s</i>ᵢ[n]. También puedes tocar la onda.
           </p>
           <div class="sample-control">
-            <label class="field-label" for="sample">n</label>
+            <label class="n-label math" for="sample">n</label>
             <input id="sample" type="range" min="0" max="479" step="1" />
-            <input id="sample-number" type="number" class="num" min="0" max="479" step="1" inputmode="numeric" aria-label="Muestra n" />
+            <input id="sample-number" type="number" class="lcd" min="0" max="479" step="1" inputmode="numeric" aria-label="Muestra n" />
           </div>
+          <p id="sample-time" class="param-hint"></p>
           <table class="sample-table">
             <thead>
               <tr><th>canal</th><th class="n">sᵢ[n]</th><th class="n">aᵢ</th><th class="n">aᵢ·sᵢ[n]</th></tr>
             </thead>
             <tbody id="sample-body"></tbody>
             <tfoot>
-              <tr><th colspan="3">Suma Σ aᵢ·sᵢ[n]</th><td id="sample-sum" class="n strong"></td></tr>
+              <tr><th colspan="3">suma Σ aᵢ·sᵢ[n]</th><td id="sample-sum" class="n strong"></td></tr>
               <tr><th colspan="3">m[n] leído de la onda</th><td id="sample-wave" class="n strong"></td></tr>
             </tfoot>
           </table>
           <p id="sample-check" class="check-badge"></p>
         </section>
 
-        <section class="panel dependence-panel" aria-labelledby="h-dep">
-          <header class="panel-head">
-            <h2 id="h-dep">Dependencia lineal</h2>
-            <span class="panel-meta">subespacio generado</span>
-          </header>
-          <p class="concept">
-            <span class="math">S</span> es la matriz cuyas columnas son los canales activos. Su <b>rango</b> es la dimensión
-            del subespacio que generan. No depende de las amplitudes.
+        <section id="panel-dependencia" class="tab-panel" role="tabpanel" aria-labelledby="tab-dependencia">
+          <p class="panel-lede">
+            <i class="math">S</i> tiene por columnas los canales activos. Su <b>rango</b> es la dimensión del
+            subespacio que generan; no depende de las amplitudes.
           </p>
           <div class="rank-row">
             <span id="rank" class="rank-number">0</span>
@@ -120,68 +156,63 @@
           </div>
           <div id="dependence-body" class="dependence-body"></div>
           <details class="details">
-            <summary>Cómo se calcula</summary>
-            <p class="muted small">
-              El rango de <span class="math">S</span> (480 × p) es igual al de <span class="math">S</span>ᵀ<span class="math">S</span>
-              (p × p), que se reduce con eliminación gaussiana con pivoteo parcial. Como la página calcula con números de máquina,
-              un pivote se toma como cero si es menor que 10⁻⁹ veces la mayor entrada. Con fases en grados enteros, el caso
-              independiente más cercano (0° frente a 1°) queda muy por encima de ese umbral.
+            <summary>Cómo se calcula (SᵀS)</summary>
+            <p class="param-hint">
+              El rango de S (480 × p) es igual al de SᵀS (p × p), que se reduce con eliminación gaussiana con pivoteo
+              parcial. Un pivote cuenta como cero si es menor que 10⁻⁹ veces la mayor entrada: con fases en grados
+              enteros, el caso independiente más cercano (0° frente a 1°) queda muy por encima de ese umbral.
             </p>
-            <p class="field-label">SᵀS = productos internos ⟨sᵢ, sⱼ⟩</p>
             <div id="gram" class="matrix-wrap"></div>
           </details>
         </section>
-        </div>
 
-        <section class="panel approx-panel" aria-labelledby="h-approx">
-          <header class="panel-head">
-            <h2 id="h-approx">Ampliación: aproximar una onda con armónicos</h2>
-            <span id="approx-dim" class="panel-meta"></span>
-          </header>
-          <p class="concept">
-            Se elige una onda objetivo <span class="math">y</span> ∈ <span class="math">V</span> (con media cero) y el subespacio
-            <span class="math">W</span> = span{sen₁, cos₁, …, sen<sub>K</sub>, cos<sub>K</sub>}. La mejor aproximación de
-            <span class="math">y</span> dentro de <span class="math">W</span> es su <b>proyección ortogonal</b>
-            <span class="math">p</span>. Como esa base es ortogonal, cada coeficiente es ⟨<span class="math">y</span>, b⟩ / ⟨b, b⟩.
-            El error ‖<span class="math">y</span> − <span class="math">p</span>‖ nunca crece al aumentar K, porque W solo se agranda.
-            Usa el producto interno ⟨u, v⟩ = Σ u[n]·v[n], un paso más allá de los espacios vectoriales del curso.
+        <section id="panel-ampliacion" class="tab-panel" role="tabpanel" aria-labelledby="tab-ampliacion" hidden>
+          <p class="panel-lede">
+            Aproximar una onda con armónicos. La mejor aproximación de <i class="math">y</i> en
+            <i class="math">W</i> = span{sen₁, cos₁, …, sen<sub>K</sub>, cos<sub>K</sub>} es su <b>proyección ortogonal</b>
+            <i class="math">p</i>; cada coeficiente es ⟨<i class="math">y</i>, b⟩/⟨b, b⟩ y el error nunca crece con K.
+            Usa el producto interno, un paso más allá del curso.
           </p>
-          <div class="approx-controls">
-            <div id="approx-targets" class="chips"></div>
-            <div class="sample-control approx-k">
-              <label class="field-label k-label" for="approx-k">K</label>
-              <input id="approx-k" type="range" step="1" />
-              <input id="approx-k-number" type="number" class="num" step="1" inputmode="numeric" aria-label="Número de armónicos K" />
-            </div>
+          <div id="approx-targets" class="segmented"></div>
+          <div class="sample-control">
+            <label class="n-label math" for="approx-k">K</label>
+            <input id="approx-k" type="range" step="1" />
+            <input id="approx-k-number" type="number" class="lcd" step="1" inputmode="numeric" aria-label="Número de armónicos K" />
           </div>
-          <div class="approx-grid">
-            <div>
-              <p class="legend"><span class="swatch swatch-muted"></span><span class="math">y</span> objetivo <span class="swatch swatch-accent"></span><span class="math">p</span> aproximación</p>
-              <canvas id="approx-canvas" class="wave wave-lg" aria-label="Onda objetivo y su aproximación"></canvas>
-            </div>
-            <div>
-              <p class="legend">Amplitud de cada armónico k en <span class="math">p</span></p>
-              <canvas id="approx-spectrum" class="bars" aria-label="Amplitud por armónico"></canvas>
-              <dl id="approx-stats" class="stats"></dl>
-            </div>
-          </div>
+          <p id="approx-dim" class="param-hint"></p>
+          <p class="legend">
+            <span class="swatch swatch-muted"></span><i class="math">y</i> objetivo
+            <span class="swatch swatch-accent"></span><i class="math">p</i> aproximación
+          </p>
+          <canvas id="approx-canvas" class="mini-scope" aria-label="Onda objetivo y su aproximación"></canvas>
+          <p class="legend">amplitud de cada armónico k en <i class="math">p</i></p>
+          <canvas id="approx-spectrum" class="bars" aria-label="Amplitud por armónico"></canvas>
+          <dl id="approx-stats" class="stat-grid"></dl>
         </section>
-      </main>
 
-      <footer class="foot">
-        <details class="details">
-          <summary>Fundamento matemático</summary>
-          <ol class="foundation">
-            <li><b>Espacio vectorial.</b> ℝ⁴⁸⁰ con la suma y el producto por escalar componente a componente cumple los axiomas de espacio vectorial. Un periodo de la señal son 480 números, así que es un vector de ese espacio.</li>
-            <li><b>Un plano por armónico.</b> Por sen(x + φ) = cos φ · sen x + sen φ · cos x, cada canal de armónico k es cos φ · senₖ + sen φ · cosₖ. Todos los canales de un mismo armónico viven en el plano generado por senₖ y cosₖ: dos son dependientes si sus fases difieren en 0° o 180°, y tres siempre lo son.</li>
-            <li><b>Vector cero e inverso aditivo.</b> Invertir la polaridad es multiplicar por −1, y s + (−1)s = 0: la mezcla es el vector cero y no suena nada.</li>
-            <li><b>Rango y redundancia.</b> Si el rango es menor que el número de canales, existe una combinación lineal no trivial igual a cero y al menos un canal pertenece al subespacio generado por los demás: es redundante.</li>
-            <li><b>Salida lineal.</b> Suena g·m con g = 0.9/p · volumen, un producto por escalar fijo. Como |aᵢ| ≤ 1 y |sᵢ[n]| ≤ 1, |m[n]| ≤ p y |g·m[n]| ≤ 0.9: nunca se recorta. Un g que dependiera del pico, o recortar la señal, dejaría de ser lineal en los coeficientes.</li>
-          </ol>
-        </details>
-        <p class="muted small">Página estática, sin servidor ni cuentas. <a href="https://github.com/Djch18AtSchool/laboratorio-de-senales">Código fuente</a>.</p>
-      </footer>
+        <footer class="inspector-foot">
+          <a href="https://github.com/Djch18AtSchool/laboratorio-de-senales">Código fuente</a>
+          <span>· página estática, sin servidor ni cuentas</span>
+        </footer>
+      </aside>
     </div>
+
+    <dialog id="help" class="help" aria-labelledby="help-title">
+      <header class="help-head">
+        <h2 id="help-title">Fundamento matemático</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        </button>
+      </header>
+      <ol class="foundation">
+        <li><b>Espacio vectorial.</b> ℝ⁴⁸⁰ con la suma y el producto por escalar componente a componente cumple los axiomas de espacio vectorial. Un periodo de 10 ms de la señal, muestreado a 48 000 muestras por segundo, son 480 números: un vector de ese espacio. Lo que se dibuja, se analiza y suena es ese mismo arreglo.</li>
+        <li><b>Un plano por armónico.</b> Por sen(x + φ) = cos φ · sen x + sen φ · cos x, cada canal de armónico k es cos φ · senₖ + sen φ · cosₖ. Todos los canales de un mismo armónico viven en el plano generado por senₖ y cosₖ: dos son dependientes si sus fases difieren en 0° o 180°, y tres siempre lo son.</li>
+        <li><b>Vector cero e inverso aditivo.</b> Invertir la polaridad es multiplicar por −1, y s + (−1)s = 0: la mezcla es el vector cero y no suena nada.</li>
+        <li><b>Rango y redundancia.</b> Si el rango es menor que el número de canales, existe una combinación lineal no trivial igual a cero y al menos un canal pertenece al subespacio generado por los demás: es redundante.</li>
+        <li><b>Salida lineal.</b> Suena g·m con g = 0.9/p · volumen, un producto por escalar fijo. Como |aᵢ| ≤ 1 y |sᵢ[n]| ≤ 1, |m[n]| ≤ p y |g·m[n]| ≤ 0.9: nunca se recorta. Un g que dependiera del pico, o recortar la señal, dejaría de ser lineal en los coeficientes.</li>
+      </ol>
+      <p class="param-hint help-keys">Atajos: barra espaciadora para escuchar o detener · flechas sobre faders y diales · doble clic para volver a cero.</p>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

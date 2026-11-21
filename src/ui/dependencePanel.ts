@@ -74,9 +74,17 @@ const renderDependence = (el: DependenceElements, labels: ActiveLabel[], model: 
   const names = labels.map((l) => l.name);
   const dependent = rank < p;
 
+  const redundant = new Set(relations.map((r) => r.index));
+  const dots = h('div', { class: 'rank-dots', 'aria-hidden': 'true' },
+    ...labels.map((l, i) => h('span', {
+      class: `rank-dot${redundant.has(i) ? ' is-redundant' : ''}`,
+      style: `--c:${channelColorVar(l.slot)}`,
+      title: `${l.name}${redundant.has(i) ? ': redundante' : ': en la base'}`,
+    }, l.name)));
   el.rank.textContent = String(rank);
   el.summary.replaceChildren(
     h('p', { class: 'rank-line' }, `rango de S con ${p} ${p === 1 ? 'canal activo' : 'canales activos'}`),
+    dots,
     p === 0
       ? h('span', { class: 'tag' }, 'sin canales')
       : h('span', { class: `tag ${dependent ? 'tag-warn' : 'tag-ok'}` }, dependent ? 'linealmente dependientes' : 'linealmente independientes'),

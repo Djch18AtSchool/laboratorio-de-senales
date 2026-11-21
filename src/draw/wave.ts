@@ -3,6 +3,8 @@ export interface WaveLayer {
   readonly color: string;
   readonly width?: number;
   readonly alpha?: number;
+  /** Resplandor suave, como el trazo de un osciloscopio. */
+  readonly glow?: boolean;
 }
 
 export interface WaveOptions {
@@ -13,13 +15,25 @@ export interface WaveOptions {
   readonly markerColor: string;
   readonly gridColor: string;
   readonly labelColor?: string;
+  /** Divisiones verticales de la retícula (10 → una por milisegundo). */
+  readonly divisions?: number;
+  /** Líneas horizontales en cada entero entre −yMax y yMax, con etiquetas. */
   readonly showScale?: boolean;
+  /** Etiquetas de tiempo bajo las divisiones (p. ej. «ms»). */
+  readonly timeUnit?: string;
   /** Capa que recibe el punto en la muestra marcada (por defecto la última). */
   readonly markerLayer?: number;
+  /** Color del aro del punto marcado (el fondo del lienzo). */
+  readonly dotRing?: string;
+  /** Márgenes verticales para que la onda no pase bajo textos superpuestos. */
+  readonly padTop?: number;
+  readonly padBottom?: number;
 }
 
-const PADDING_Y = 6;
-const LABEL_FONT = '11px ui-sans-serif, system-ui, sans-serif';
+const PADDING_Y = 8;
+const LABEL_FONT = '10.5px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+const GLOW_BLUR = 10;
+const MAX_INTEGER_LINES = 8;
 
 /** Ajusta el tamaño interno del lienzo a su tamaño en pantalla y la densidad de píxeles. */
 const fitCanvas = (canvas: HTMLCanvasElement): { ctx: CanvasRenderingContext2D; w: number; h: number } | null => {
@@ -41,29 +55,58 @@ const fitCanvas = (canvas: HTMLCanvasElement): { ctx: CanvasRenderingContext2D; 
 };
 
 const xOf = (n: number, count: number, w: number): number => (n / (count - 1)) * w;
+const crisp = (v: number): number => Math.round(v) + 0.5;
 
-const drawGrid = (ctx: CanvasRenderingContext2D, w: number, yOf: (v: number) => number, opts: WaveOptions): void => {
-  ctx.strokeStyle = opts.gridColor;
+const drawGrid = (ctx: CanvasRenderingContext2D, w: number, h: number, yOf: (v: number) => number, opts: WaveOptions): void => {
   ctx.lineWidth = 1;
+  ctx.strokeStyle = opts.gridColor;
+  const divisions = opts.divisions ?? 0;
+  ctx.globalAlpha = 0.55;
   ctx.beginPath();
-  ctx.moveTo(0, Math.round(yOf(0)) + 0.5);
-  ctx.lineTo(w, Math.round(yOf(0)) + 0.5);
-  ctx.stroke();
-  if (!opts.showScale) return;
-  ctx.setLineDash([2, 4]);
-  ctx.beginPath();
-  for (const v of [opts.yMax, -opts.yMax]) {
-    ctx.moveTo(0, Math.round(yOf(v)) + 0.5);
-    ctx.lineTo(w, Math.round(yOf(v)) + 0.5);
+  for (let i = 1; i < divisions; i++) {
+    const x = crisp((i / divisions) * w);
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+  }
+  if (opts.showScale && opts.yMax <= MAX_INTEGER_LINES) {
+    for (let v = 1; v <= opts.yMax; v++) {
+      for (const s of [v, -v]) {
+        ctx.moveTo(0, crisp(yOf(s)));
+        ctx.lineTo(w, crisp(yOf(s)));
+      }
+    }
   }
   ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = opts.labelColor ?? opts.gridColor;
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, crisp(yOf(0)));
+  ctx.lineTo(w, crisp(yOf(0)));
+  ctx.stroke();
+  drawLabels(ctx, w, h, yOf, opts);
+};
+
+const drawLabels = (ctx: CanvasRenderingContext2D, w: number, h: number, yOf: (v: number) => number, opts: WaveOptions): void => {
+  if (!opts.labelColor) return;
+  ctx.fillStyle = opts.labelColor;
   ctx.font = LABEL_FONT;
-  ctx.textBaseline = 'top';
-  ctx.fillText(`+${opts.yMax}`, 4, yOf(opts.yMax) + 3);
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(`−${opts.yMax}`, 4, yOf(-opts.yMax) - 3);
+  if (opts.showScale) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`+${opts.yMax}`, w - 6, yOf(opts.yMax) + 8);
+    ctx.fillText('0', w - 6, yOf(0) - 8);
+    ctx.fillText(`−${opts.yMax}`, w - 6, yOf(-opts.yMax) - 8);
+  }
+  const divisions = opts.divisions ?? 0;
+  if (opts.timeUnit && divisions > 0) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    for (let i = 1; i < divisions; i += 1) {
+      if (i % 2 === 1) continue;
+      ctx.fillText(`${i}`, (i / divisions) * w, h - 4);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillText(`0 ${opts.timeUnit}`, 6, h - 4);
+  }
 };
 
 const drawLayer = (ctx: CanvasRenderingContext2D, w: number, yOf: (v: number) => number, layer: WaveLayer): void => {
@@ -72,6 +115,11 @@ const drawLayer = (ctx: CanvasRenderingContext2D, w: number, yOf: (v: number) =>
   ctx.strokeStyle = layer.color;
   ctx.lineWidth = layer.width ?? 1.5;
   ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  if (layer.glow) {
+    ctx.shadowColor = layer.color;
+    ctx.shadowBlur = GLOW_BLUR;
+  }
   ctx.beginPath();
   for (let i = 0; i < n; i++) {
     const x = xOf(i, n, w);
@@ -80,26 +128,29 @@ const drawLayer = (ctx: CanvasRenderingContext2D, w: number, yOf: (v: number) =>
     else ctx.lineTo(x, y);
   }
   ctx.stroke();
+  ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 };
 
 const drawMarker = (ctx: CanvasRenderingContext2D, w: number, h: number, yOf: (v: number) => number, opts: WaveOptions): void => {
   const layer = opts.layers[opts.markerLayer ?? opts.layers.length - 1];
   if (opts.marker === undefined || !layer) return;
-  const x = Math.round(xOf(opts.marker, layer.values.length, w)) + 0.5;
+  const x = crisp(xOf(opts.marker, layer.values.length, w));
   ctx.strokeStyle = opts.markerColor;
   ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
   ctx.beginPath();
   ctx.moveTo(x, 0);
   ctx.lineTo(x, h);
   ctx.stroke();
+  ctx.setLineDash([]);
   const y = yOf(layer.values[opts.marker]);
   ctx.fillStyle = layer.color;
   ctx.beginPath();
   ctx.arc(x, y, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = opts.gridColor;
+  ctx.strokeStyle = opts.dotRing ?? opts.gridColor;
   ctx.stroke();
 };
 
@@ -108,8 +159,10 @@ export const drawWave = (canvas: HTMLCanvasElement, opts: WaveOptions): void => 
   const fit = fitCanvas(canvas);
   if (!fit) return;
   const { ctx, w, h } = fit;
-  const yOf = (v: number): number => h / 2 - (v / opts.yMax) * (h / 2 - PADDING_Y);
-  drawGrid(ctx, w, yOf, opts);
+  const top = opts.padTop ?? PADDING_Y;
+  const bottom = opts.padBottom ?? PADDING_Y;
+  const yOf = (v: number): number => top + ((opts.yMax - v) / (2 * opts.yMax)) * (h - top - bottom);
+  drawGrid(ctx, w, h, yOf, opts);
   opts.layers.forEach((layer) => drawLayer(ctx, w, yOf, layer));
   drawMarker(ctx, w, h, yOf, opts);
 };

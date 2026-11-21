@@ -6,6 +6,7 @@ export interface Theme {
   readonly grid: string;
   readonly marker: string;
   readonly surface: string;
+  readonly screen: string;
   readonly channels: readonly string[];
 }
 
@@ -18,6 +19,7 @@ export const readTheme = (): Theme => ({
   grid: cssVar('--grid'),
   marker: cssVar('--marker'),
   surface: cssVar('--surface'),
+  screen: cssVar('--screen'),
   channels: Array.from({ length: CHANNEL_COUNT }, (_, i) => cssVar(`--ch-${i}`)),
 });
 
