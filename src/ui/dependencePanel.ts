@@ -48,8 +48,22 @@ const gramTable = (model: Model, labels: ActiveLabel[]): HTMLElement => {
   return h('table', { class: 'matrix' }, h('thead', {}, head), h('tbody', {}, ...rows));
 };
 
-export const createDependencePanel = (el: DependenceElements) => (state: AppState, model: Model): void => {
-  const labels = activeLabels(state, model);
+/** Firma de lo que muestra el panel: si no cambia, no se reconstruye (y no se reinician sus animaciones). */
+const signature = (labels: ActiveLabel[], model: Model): string =>
+  JSON.stringify([labels, model.dependence.rank, model.dependence.relations, model.dependence.gram]);
+
+export const createDependencePanel = (el: DependenceElements) => {
+  let last = '';
+  return (state: AppState, model: Model): void => {
+    const labels = activeLabels(state, model);
+    const key = signature(labels, model);
+    if (key === last) return;
+    last = key;
+    renderDependence(el, labels, model);
+  };
+};
+
+const renderDependence = (el: DependenceElements, labels: ActiveLabel[], model: Model): void => {
   const p = labels.length;
   const { rank, relations } = model.dependence;
   const names = labels.map((l) => l.name);

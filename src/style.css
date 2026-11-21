@@ -324,6 +324,12 @@ b {
   align-items: start;
 }
 
+@media (max-width: 959px) {
+  .mix-panel {
+    order: -1;
+  }
+}
+
 @media (min-width: 960px) {
   .workbench {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
